@@ -105,17 +105,8 @@ export function createMpaPlugin<
     }
   }
 
-  /**
-   * Template file transform.
-   */
-  function transform(fileContent, id) {
-    const page = virtualPageMap[id];
-    /**
-     * Fixed #19.
-     * Always return `null` if there're no modifications applied.
-     * Otherwise it may cause building warnings when `build.sourcemap` enabled.
-     */
-    if (!page) return null;
+  function ejsRender(fileContent: string, filename: string) {
+    const page = virtualPageMap[filename];
 
     return ejs.render(
       !page.entry
@@ -129,7 +120,7 @@ export function createMpaPlugin<
       // Variables injection
       { ...resolvedConfig.env, ...page.data },
       // For error report
-      { filename: id, root: resolvedConfig.root },
+      { filename, root: resolvedConfig.root },
     );
   }
 
@@ -169,7 +160,6 @@ export function createMpaPlugin<
       if (!page) return null;
       return fs.readFileSync(page.template || template, 'utf-8');
     },
-    transform,
     configureServer(server) {
       const {
         config,
@@ -270,7 +260,7 @@ export function createMpaPlugin<
           await transformIndexHtml(
             url,
             // No transform applied, keep code as-is
-            transform(loadResult, fileName) ?? loadResult,
+            ejsRender(loadResult, fileName) ?? loadResult,
             req.originalUrl,
           ),
         );
